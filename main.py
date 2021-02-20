@@ -15,6 +15,9 @@ KILL_BIRD_EVENT = pygame.event.Event(KILL_BIRD)
 ADD_SCORE = pygame.USEREVENT + 2
 ADD_SCORE_EVENT = pygame.event.Event(ADD_SCORE)
 
+ADD_COIN = pygame.USEREVENT + 3
+ADD_COIN_EVENT = pygame.event.Event(ADD_COIN)
+
 
 def load_image(fullname: str) -> pygame.Surface:
     """
@@ -73,6 +76,41 @@ class Background(pygame.sprite.Sprite):
         self.rect.x -= self.speed
 
 
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, x_pos, y_pos):
+        super().__init__(all_sprites, coins)
+        self.anim = load_animations("coins")
+        self.image = next(self.anim)
+        self.rect = self.image.get_rect()
+        self.rect.x = x_pos
+        self.rect.y = y_pos
+        self.transform()
+
+        self.speed = 2
+
+        self.start_tick = pygame.time.get_ticks()
+
+    def update(self):
+        seconds = (pygame.time.get_ticks() - self.start_tick) / 1000
+        if seconds > 0.1:
+            self.image = next(self.anim)
+            self.transform()
+            x, y = self.rect.centerx, self.rect.y
+            self.rect = self.image.get_rect()
+            self.rect.centerx, self.rect.y = x, y
+            self.start_tick = pygame.time.get_ticks()
+
+        if self.rect.x < -self.rect.width:
+            self.kill()
+        self.rect.x -= self.speed
+
+    def transform(self):
+        self.image = pygame.transform.scale(
+            self.image,
+            (self.image.get_rect().width // 4, self.image.get_rect().height // 4),
+        )
+
+
 class BasePipe(pygame.sprite.Sprite):
     """
     Barriers which you should dodge
@@ -100,7 +138,7 @@ class BasePipe(pygame.sprite.Sprite):
         """
         Spawn coin between pipes
         """
-        pass
+        Coin(self.rect.centerx, self.rect.y + self.skylight // 2)
 
     def set_x(self, x_pos):
         self.rect.x = x_pos
@@ -168,6 +206,11 @@ class Bird(pygame.sprite.Sprite):
         self.start_tick = pygame.time.get_ticks()
 
     def update(self):
+        coins_collided = pygame.sprite.spritecollide(self, coins, False)
+        for coin in coins_collided:
+            coin.kill()
+            pygame.event.post(ADD_COIN_EVENT)
+
         ground_collided = pygame.sprite.spritecollide(self, grounds, False)
         pipes_collided = pygame.sprite.spritecollide(self, pipes, False)
 
@@ -182,7 +225,6 @@ class Bird(pygame.sprite.Sprite):
             self.start_tick = pygame.time.get_ticks()
 
         if self.rect.y <= 0:
-            print(self.velocity)
             self.velocity = -15 * GRAVITY
 
         self.rect.y -= self.velocity
@@ -194,47 +236,45 @@ class Bird(pygame.sprite.Sprite):
 all_sprites = pygame.sprite.Group()
 pipes = pygame.sprite.Group()
 grounds = pygame.sprite.Group()
+coins = pygame.sprite.Group()
 
 
-def main():
-    pygame.init()
-    pygame.display.set_caption("Flappy Bird")
-    pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
+pygame.init()
+pygame.display.set_caption("Flappy Bird")
+pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
 
-    clock = pygame.time.Clock()
-    screen = pygame.display.set_mode((288, 512))
+clock = pygame.time.Clock()
+screen = pygame.display.set_mode((288, 512))
 
-    Background()
-    b = Background()
-    b.set_x(b.rect.width)
+Background()
+b = Background()
+b.set_x(b.rect.width)
 
-    Ground()
-    g = Ground()
-    g.set_x(g.rect.width)
+Ground()
+g = Ground()
+g.set_x(g.rect.width)
 
-    bird = Bird()
+bird = Bird()
 
-    running = True
-    while running:
-        clock.tick(60)
+running = True
+while running:
+    clock.tick(60)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == KILL_BIRD:
-                bird.velocity = 0
-            elif event.type == ADD_SCORE:
-                pass
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    bird.jump()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == ADD_COIN:
+            pass
+        elif event.type == KILL_BIRD:
+            bird.velocity = 0
+        elif event.type == ADD_SCORE:
+            pass
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                bird.jump()
 
-        all_sprites.update()
-        all_sprites.draw(screen)
-        pygame.display.update()
+    all_sprites.update()
+    all_sprites.draw(screen)
+    pygame.display.update()
 
-    pygame.quit()
-
-
-if __name__ == "__main__":
-    main()
+pygame.quit()
