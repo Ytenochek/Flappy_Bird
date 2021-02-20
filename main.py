@@ -278,6 +278,9 @@ class GameHandler:
                 self.game_mode = self.game_over()
 
     def game_over(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.terminate()
         return "OVER"
 
     def main_menu(self):
