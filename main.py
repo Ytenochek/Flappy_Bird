@@ -49,7 +49,7 @@ class Background(pygame.sprite.Sprite):
     """
 
     def __init__(self):
-        super().__init__(all_sprites)
+        super().__init__(all_sprites, backgrounds)
         self.images = {
             "day": load_image("data\\sprites\\back_ground\\day.png"),
             "night": load_image("data\\sprites\\back_ground\\night.png"),
@@ -193,9 +193,9 @@ class Ground(pygame.sprite.Sprite):
 
 
 class Bird(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, color):
         super().__init__(all_sprites)
-        self.color = "yellow"
+        self.color = color
         self.anim = load_animations("birds\\" + self.color)
         self.image = next(self.anim)
         self.rect = self.image.get_rect()
@@ -235,15 +235,16 @@ class Bird(pygame.sprite.Sprite):
 
 all_sprites = pygame.sprite.Group()
 pipes = pygame.sprite.Group()
+backgrounds = pygame.sprite.Group()
 grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
-
 
 pygame.init()
 pygame.display.set_caption("Flappy Bird")
 pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
 
 clock = pygame.time.Clock()
+
 screen = pygame.display.set_mode((288, 512))
 
 Background()
@@ -253,28 +254,66 @@ b.set_x(b.rect.width)
 Ground()
 g = Ground()
 g.set_x(g.rect.width)
+bird = Bird("yellow")
 
-bird = Bird()
 
-running = True
-while running:
-    clock.tick(60)
+class GameHandler:
+    def __init__(self):
+        self.game_mode = "MENU"
+        self.prefix = "data\\sprites\\text"
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == ADD_COIN:
-            pass
-        elif event.type == KILL_BIRD:
-            bird.velocity = 0
-        elif event.type == ADD_SCORE:
-            pass
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                bird.jump()
+    @staticmethod
+    def terminate():
+        pygame.quit()
+        sys.exit()
 
-    all_sprites.update()
-    all_sprites.draw(screen)
-    pygame.display.update()
+    def start(self):
+        while True:
+            clock.tick(60)
+            if self.game_mode == "MENU":
+                self.game_mode = self.main_menu()
+            elif self.game_mode == "GAME":
+                self.game_mode = self.game()
+            elif self.game_mode == "OVER":
+                self.game_mode = self.game_over()
 
-pygame.quit()
+    def game_over(self):
+        return "OVER"
+
+    def main_menu(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bird.jump()
+                    return "GAME"
+        return "MENU"
+
+    def game(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bird.jump()
+            elif event.type == ADD_COIN:
+                pass
+            elif event.type == KILL_BIRD:
+                bird.velocity = 0
+                return "OVER"
+            elif event.type == ADD_SCORE:
+                pass
+        all_sprites.update()
+        all_sprites.draw(screen)
+        pygame.display.update()
+        return "GAME"
+
+
+def main():
+    game = GameHandler()
+    game.start()
+
+
+if __name__ == '__main__':
+    main()
