@@ -7,6 +7,13 @@ import pygame
 
 
 # import pickle
+GRAVITY = 0.09
+
+KILL_BIRD = pygame.USEREVENT + 1
+KILL_BIRD_EVENT = pygame.event.Event(KILL_BIRD)
+
+ADD_SCORE = pygame.USEREVENT + 2
+ADD_SCORE_EVENT = pygame.event.Event(ADD_SCORE)
 
 
 def load_image(fullname: str) -> pygame.Surface:
@@ -61,7 +68,7 @@ class Background(pygame.sprite.Sprite):
         self.rect.x = x_pos
 
     def update(self):
-        if self.rect.x < -self.rect.width:
+        if self.rect.x <= -self.rect.width:
             self.rect.x = self.rect.width
         self.rect.x -= self.speed
 
@@ -81,6 +88,7 @@ class BasePipe(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.speed = 2
         self.skylight = 100  # Distance between two pipes
+        self.used = False
 
     def change_image(self, time_of_day: str):
         """
@@ -98,6 +106,9 @@ class BasePipe(pygame.sprite.Sprite):
         self.rect.x = x_pos
 
     def update(self):
+        if not self.used and self.rect.x < 144:
+            pygame.event.post(ADD_SCORE_EVENT)
+            self.used = True
         if self.rect.x < -self.rect.width:
             self.kill()
         self.rect.x -= self.speed
@@ -138,9 +149,46 @@ class Ground(pygame.sprite.Sprite):
         self.rect.x = x_pos
 
     def update(self):
-        if self.rect.x < -self.rect.width:
+        if self.rect.x <= -self.rect.width:
             self.rect.x = self.rect.width
         self.rect.x -= self.speed
+
+
+class Bird(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.color = "yellow"
+        self.anim = load_animations("birds\\" + self.color)
+        self.image = next(self.anim)
+        self.rect = self.image.get_rect()
+        self.rect.x = 144 - self.rect.width // 2
+        self.rect.y = 256 - self.rect.height // 2
+        self.velocity = 0
+
+        self.start_tick = pygame.time.get_ticks()
+
+    def update(self):
+        ground_collided = pygame.sprite.spritecollide(self, grounds, False)
+        pipes_collided = pygame.sprite.spritecollide(self, pipes, False)
+
+        if ground_collided or pipes_collided:
+            pygame.event.post(KILL_BIRD_EVENT)
+
+        self.velocity -= GRAVITY
+        seconds = (pygame.time.get_ticks() - self.start_tick) / 1000
+
+        if seconds > 0.1:
+            self.image = next(self.anim)
+            self.start_tick = pygame.time.get_ticks()
+
+        if self.rect.y <= 0:
+            print(self.velocity)
+            self.velocity = -15 * GRAVITY
+
+        self.rect.y -= self.velocity
+
+    def jump(self):
+        self.velocity = 2
 
 
 all_sprites = pygame.sprite.Group()
@@ -151,6 +199,7 @@ grounds = pygame.sprite.Group()
 def main():
     pygame.init()
     pygame.display.set_caption("Flappy Bird")
+    pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
 
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((288, 512))
@@ -163,6 +212,8 @@ def main():
     g = Ground()
     g.set_x(g.rect.width)
 
+    bird = Bird()
+
     running = True
     while running:
         clock.tick(60)
@@ -170,6 +221,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == KILL_BIRD:
+                bird.velocity = 0
+            elif event.type == ADD_SCORE:
+                pass
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bird.jump()
 
         all_sprites.update()
         all_sprites.draw(screen)
