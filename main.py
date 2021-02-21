@@ -285,6 +285,7 @@ class GameHandler:
         self.prefix = "data\\sprites\\texts\\"
         self.over = Text(48, 235, self.prefix + "gameover.png")
         self.title = Text(55, 50, self.prefix + "title.png")
+        self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
 
     @staticmethod
     def terminate():
@@ -309,6 +310,7 @@ class GameHandler:
         if self.over.end:
             self.over.renew()
             pygame.time.wait(1000)
+            bird.rect.y = 256 - bird.rect.height // 2
             return "MENU"
 
         self.over.update()
@@ -327,15 +329,19 @@ class GameHandler:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.title.renew()
-                    bird.rect.y = 256 - bird.rect.height // 2
+                    self.get_ready.renew()
                     bird.jump()
                     return "GAME"
 
         if not self.title.end:
             self.title.update()
 
+        if not self.get_ready.end:
+            self.get_ready.update()
+
         all_sprites.draw(screen)
         screen.blit(self.title.image, self.title.rect)
+        screen.blit(self.get_ready.image, self.get_ready.rect)
 
         pygame.display.update()
         return "MENU"
