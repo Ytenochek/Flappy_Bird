@@ -233,11 +233,30 @@ class Bird(pygame.sprite.Sprite):
         self.velocity = 2
 
 
+class Text(pygame.sprite.Sprite):
+    def __init__(self, x_finish, y_finish, name):
+        super().__init__(texts)
+        self.x_finish = x_finish
+        self.image = load_image(name)
+        self.rect = self.image.get_rect()
+        self.rect.y = y_finish
+        self.rect.x = -self.rect.width
+        self.speed = 5
+        self.end = False
+
+    def update(self):
+        if self.rect.x != self.x_finish:
+            self.rect.move_ip(self.speed, 0)
+        else:
+            self.end = True
+
+
 all_sprites = pygame.sprite.Group()
 pipes = pygame.sprite.Group()
 backgrounds = pygame.sprite.Group()
 grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
+texts = pygame.sprite.Group()
 
 pygame.init()
 pygame.display.set_caption("Flappy Bird")
@@ -256,11 +275,14 @@ g = Ground()
 g.set_x(g.rect.width)
 bird = Bird("yellow")
 
+over = Text(48, 235, "data\\sprites\\texts\\gameover.png")
+
 
 class GameHandler:
     def __init__(self):
         self.game_mode = "MENU"
-        self.prefix = "data\\sprites\\text"
+        self.prefix = "data\\sprites\\texts\\"
+        self.over = Text(48, 235, self.prefix + "gameover.png")
 
     @staticmethod
     def terminate():
@@ -281,6 +303,19 @@ class GameHandler:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.terminate()
+
+        if self.over.end:
+            texts.empty()
+            self.over = Text(48, 235, self.prefix + "gameover.png")
+            return "MENU"
+
+        texts.update()
+
+        all_sprites.draw(screen)
+        texts.draw(screen)
+
+        pygame.display.update()
+
         return "OVER"
 
     def main_menu(self):
@@ -289,6 +324,7 @@ class GameHandler:
                 self.terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    bird.rect.y = 256 - bird.rect.height // 2
                     bird.jump()
                     return "GAME"
         return "MENU"
