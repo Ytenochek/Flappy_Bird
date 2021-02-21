@@ -235,7 +235,7 @@ class Bird(pygame.sprite.Sprite):
 
 class Text(pygame.sprite.Sprite):
     def __init__(self, x_finish, y_finish, name):
-        super().__init__(texts)
+        super().__init__()
         self.x_finish = x_finish
         self.image = load_image(name)
         self.rect = self.image.get_rect()
@@ -250,13 +250,16 @@ class Text(pygame.sprite.Sprite):
         else:
             self.end = True
 
+    def renew(self):
+        self.rect.x = -self.rect.width
+        self.end = False
+
 
 all_sprites = pygame.sprite.Group()
 pipes = pygame.sprite.Group()
 backgrounds = pygame.sprite.Group()
 grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
-texts = pygame.sprite.Group()
 
 pygame.init()
 pygame.display.set_caption("Flappy Bird")
@@ -275,14 +278,13 @@ g = Ground()
 g.set_x(g.rect.width)
 bird = Bird("yellow")
 
-over = Text(48, 235, "data\\sprites\\texts\\gameover.png")
-
 
 class GameHandler:
     def __init__(self):
         self.game_mode = "MENU"
         self.prefix = "data\\sprites\\texts\\"
         self.over = Text(48, 235, self.prefix + "gameover.png")
+        self.title = Text(55, 50, self.prefix + "title.png")
 
     @staticmethod
     def terminate():
@@ -305,14 +307,13 @@ class GameHandler:
                 self.terminate()
 
         if self.over.end:
-            texts.empty()
-            self.over = Text(48, 235, self.prefix + "gameover.png")
+            self.over.renew()
             return "MENU"
 
-        texts.update()
+        self.over.update()
 
         all_sprites.draw(screen)
-        texts.draw(screen)
+        screen.blit(self.over.image, self.over.rect)
 
         pygame.display.update()
 
