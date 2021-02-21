@@ -241,11 +241,11 @@ class Text(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.y = y_finish
         self.rect.x = -self.rect.width
-        self.speed = 5
+        self.speed = 10
         self.end = False
 
     def update(self):
-        if self.rect.x != self.x_finish:
+        if self.rect.x < self.x_finish:
             self.rect.move_ip(self.speed, 0)
         else:
             self.end = True
@@ -308,6 +308,7 @@ class GameHandler:
 
         if self.over.end:
             self.over.renew()
+            pygame.time.wait(1000)
             return "MENU"
 
         self.over.update()
@@ -325,9 +326,18 @@ class GameHandler:
                 self.terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    self.title.renew()
                     bird.rect.y = 256 - bird.rect.height // 2
                     bird.jump()
                     return "GAME"
+
+        if not self.title.end:
+            self.title.update()
+
+        all_sprites.draw(screen)
+        screen.blit(self.title.image, self.title.rect)
+
+        pygame.display.update()
         return "MENU"
 
     def game(self):
