@@ -236,13 +236,48 @@ class Bird(pygame.sprite.Sprite):
 class Text(pygame.sprite.Sprite):
     def __init__(self, x_finish, y_finish, name):
         super().__init__()
-        self.x_finish = x_finish
         self.image = load_image(name)
         self.rect = self.image.get_rect()
+        self.x_finish = x_finish
         self.rect.y = y_finish
         self.rect.x = -self.rect.width
         self.speed = 10
         self.end = False
+
+    def update(self):
+        if self.rect.x < self.x_finish:
+            self.rect.move_ip(self.speed, 0)
+        else:
+            self.end = True
+
+    def renew(self):
+        self.rect.x = -self.rect.width
+        self.end = False
+        self.speed = 10
+        self.end = False
+
+
+class Button(pygame.sprite.Sprite):
+    def __init__(self, x_finish, y_finish, name):
+        super().__init__()
+        self.image = load_image(name)
+        self.rect = self.image.get_rect()
+        self.x_finish = x_finish
+        self.rect.y = y_finish
+        self.rect.x = -self.rect.width
+        self.speed = 10
+        self.end = False
+
+    def check(self):
+        return self.rect.collidepoint(*pygame.mouse.get_pos())
+
+    def transform(self, size):
+        y_pos = self.rect.y
+        self.image = pygame.transform.scale(self.image, size)
+        self.image.set_colorkey((255, 255, 255))
+        self.rect = self.image.get_rect()
+        self.rect.x = -self.rect.width
+        self.rect.y = y_pos
 
     def update(self):
         if self.rect.x < self.x_finish:
@@ -286,6 +321,9 @@ class GameHandler:
         self.over = Text(48, 235, self.prefix + "gameover.png")
         self.title = Text(55, 50, self.prefix + "title.png")
         self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
+        self.button_shop = Button(94, 450, self.prefix + "shop.png")
+
+        self.button_shop.transform((100, 50))
 
     @staticmethod
     def terminate():
@@ -330,11 +368,17 @@ class GameHandler:
                 if event.key == pygame.K_SPACE:
                     self.title.renew()
                     self.get_ready.renew()
+                    self.button_shop.renew()
                     bird.jump()
                     return "GAME"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                print(self.button_shop.check())
 
         if not self.title.end:
             self.title.update()
+
+        if not self.button_shop.end:
+            self.button_shop.update()
 
         if not self.get_ready.end:
             self.get_ready.update()
@@ -342,6 +386,7 @@ class GameHandler:
         all_sprites.draw(screen)
         screen.blit(self.title.image, self.title.rect)
         screen.blit(self.get_ready.image, self.get_ready.rect)
+        screen.blit(self.button_shop.image, self.button_shop.rect)
 
         pygame.display.update()
         return "MENU"
@@ -371,5 +416,5 @@ def main():
     game.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
