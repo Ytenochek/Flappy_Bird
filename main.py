@@ -327,7 +327,9 @@ class GameHandler:
         self.title = Text(55, 50, self.prefix + "title.png")
         self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
         self.button_shop = Button(94, 450, self.prefix + "shop.png")
-        #self.bird_yellow_button = Button(20, )
+        self.bird_yellow_button = Button(31, 130, "data\\sprites\\birds\\yellow\\1.png")
+        self.bird_blue_button = Button(127, 130, "data\\sprites\\birds\\blue\\1.png")
+        self.bird_red_button = Button(223, 130, "data\\sprites\\birds\\red\\1.png")
 
         self.button_shop.transform((100, 50))
 
@@ -421,10 +423,43 @@ class GameHandler:
             if event.type == pygame.QUIT:
                 self.terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                bird.rect.x = 144 - bird.rect.width // 2
-                bird.change_color("blue")
-                return "MENU"
+                if all([self.bird_yellow_button.end, self.bird_blue_button.end, self.bird_red_button.end]):
+                    if self.bird_red_button.check():
+                        bird.change_color("red")
+                        bird.rect.x = 144 - bird.rect.width // 2
+                        self.bird_yellow_button.renew()
+                        self.bird_red_button.renew()
+                        self.bird_blue_button.renew()
+                        return "MENU"
+                    if self.bird_yellow_button.check():
+                        bird.change_color("yellow")
+                        bird.rect.x = 144 - bird.rect.width // 2
+                        self.bird_yellow_button.renew()
+                        self.bird_red_button.renew()
+                        self.bird_blue_button.renew()
+                        return "MENU"
+                    if self.bird_blue_button.check():
+                        bird.change_color("blue")
+                        bird.rect.x = 144 - bird.rect.width // 2
+                        self.bird_yellow_button.renew()
+                        self.bird_red_button.renew()
+                        self.bird_blue_button.renew()
+                        return "MENU"
+
+        if not self.bird_yellow_button.end:
+            self.bird_yellow_button.update()
+
+        if not self.bird_blue_button.end:
+            self.bird_blue_button.update()
+
+        if not self.bird_red_button.end:
+            self.bird_red_button.update()
+
         all_sprites.draw(screen)
+        screen.blit(self.bird_yellow_button.image, self.bird_yellow_button.rect)
+        screen.blit(self.bird_blue_button.image, self.bird_blue_button.rect)
+        screen.blit(self.bird_red_button.image, self.bird_red_button.rect)
+
         pygame.display.update()
         return "SHOP"
 
