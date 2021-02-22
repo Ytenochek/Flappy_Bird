@@ -2,11 +2,11 @@ import os
 import random
 import sys
 from itertools import cycle
+import pickle
 
 import pygame
 
 
-# import pickle
 GRAVITY = 0.09
 
 KILL_BIRD = pygame.USEREVENT + 1
@@ -232,6 +232,11 @@ class Bird(pygame.sprite.Sprite):
     def jump(self):
         self.velocity = 2
 
+    def change_color(self, color):
+        self.color = color
+        self.anim = load_animations("birds\\" + self.color)
+        self.image = next(self.anim)
+
 
 class Text(pygame.sprite.Sprite):
     def __init__(self, x_finish, y_finish, name):
@@ -322,11 +327,27 @@ class GameHandler:
         self.title = Text(55, 50, self.prefix + "title.png")
         self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
         self.button_shop = Button(94, 450, self.prefix + "shop.png")
+        #self.bird_yellow_button = Button(20, )
 
         self.button_shop.transform((100, 50))
 
+        self.score = 0
+
+        self.high_score, self.coins, color, self.shop_bought = self.load_data()
+        bird.change_color(color)
+
     @staticmethod
-    def terminate():
+    def load_data():
+        with open("data\\data.fbd", "rb") as f:
+            data = pickle.load(f)
+        return data
+
+    def save_data(self):
+        with open("data\\data.fbd", "wb") as f:
+            pickle.dump((self.high_score, self.coins, bird.color, self.shop_bought), f)
+
+    def terminate(self):
+        self.save_data()
         pygame.quit()
         sys.exit()
 
@@ -339,6 +360,8 @@ class GameHandler:
                 self.game_mode = self.game()
             elif self.game_mode == "OVER":
                 self.game_mode = self.game_over()
+            elif self.game_mode == "SHOP":
+                self.game_mode = self.shop()
 
     def game_over(self):
         for event in pygame.event.get():
@@ -372,7 +395,9 @@ class GameHandler:
                     bird.jump()
                     return "GAME"
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                print(self.button_shop.check())
+                if self.button_shop.check():
+                    bird.rect.x = -100
+                    return "SHOP"
 
         if not self.title.end:
             self.title.update()
@@ -390,6 +415,18 @@ class GameHandler:
 
         pygame.display.update()
         return "MENU"
+
+    def shop(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                bird.rect.x = 144 - bird.rect.width // 2
+                bird.change_color("blue")
+                return "MENU"
+        all_sprites.draw(screen)
+        pygame.display.update()
+        return "SHOP"
 
     def game(self):
         for event in pygame.event.get():
