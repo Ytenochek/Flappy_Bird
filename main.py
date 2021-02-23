@@ -60,13 +60,13 @@ class Background(pygame.sprite.Sprite):
 
     def change_image(self, time_of_day: str):
         """
-        Changes image of backgruond
+        Changes image of background
         """
         self.image = self.images[time_of_day]
 
     def set_x(self, x_pos: float):
         """
-        Changes x pos of backgroung image (we use 2 pics)
+        Changes x pos of background image (we use 2 pics)
         """
         self.rect.x = x_pos
 
@@ -341,7 +341,7 @@ nums = pygame.sprite.Group()
 pygame.init()
 
 pygame.font.init()
-FONT = pygame.font.SysFont("Comic Sans MS", 20)
+FONT = pygame.font.SysFont("Comic Sans MS", 15)
 
 pygame.display.set_caption("Flappy Bird")
 pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
@@ -383,7 +383,10 @@ class GameHandler:
             f"High score: {self.high_score}", False, (255, 0, 0)
         )
         self.coins_text = FONT.render(f"Coins: {self.coins}", False, (255, 0, 0))
-        self.time = "day"
+        self.bought_text = FONT.render("Bought", False, (255, 0, 0))
+        self.price_text = FONT.render("250 coins", False, (255, 0, 0))
+
+        self.time = random.choice(["day", "night"])
 
     @staticmethod
     def load_data():
@@ -393,7 +396,6 @@ class GameHandler:
 
     def save_data(self):
         with open("data\\data.fbd", "wb") as f:
-            print(self.high_score, self.coins, bird.color, self.shop_bought)
             pickle.dump((self.high_score, self.coins, bird.color, self.shop_bought), f)
 
     def terminate(self):
@@ -490,6 +492,11 @@ class GameHandler:
         return "MENU"
 
     def shop(self):
+        txts = [
+            (self.bought_text, 25, 165),
+            (self.bought_text if self.shop_bought[1] else self.price_text, 110, 165),
+            (self.bought_text if self.shop_bought[2] else self.price_text, 215, 165),
+        ]
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.terminate()
@@ -502,26 +509,37 @@ class GameHandler:
                     ]
                 ):
                     if self.bird_red_button.check():
-                        bird.change_color("red")
-                        bird.rect.x = 144 - bird.rect.width // 2
-                        self.bird_yellow_button.renew()
-                        self.bird_red_button.renew()
-                        self.bird_blue_button.renew()
-                        return "MENU"
+                        if self.shop_bought[2]:
+                            bird.change_color("red")
+                            bird.rect.x = 144 - bird.rect.width // 2
+                            self.bird_yellow_button.renew()
+                            self.bird_red_button.renew()
+                            self.bird_blue_button.renew()
+                            return "MENU"
+                        else:
+                            if self.coins >= 250:
+                                self.coins -= 250
+                                self.shop_bought[2] = True
                     if self.bird_yellow_button.check():
-                        bird.change_color("yellow")
-                        bird.rect.x = 144 - bird.rect.width // 2
-                        self.bird_yellow_button.renew()
-                        self.bird_red_button.renew()
-                        self.bird_blue_button.renew()
-                        return "MENU"
+                        if self.shop_bought[0]:
+                            bird.change_color("yellow")
+                            bird.rect.x = 144 - bird.rect.width // 2
+                            self.bird_yellow_button.renew()
+                            self.bird_red_button.renew()
+                            self.bird_blue_button.renew()
+                            return "MENU"
                     if self.bird_blue_button.check():
-                        bird.change_color("blue")
-                        bird.rect.x = 144 - bird.rect.width // 2
-                        self.bird_yellow_button.renew()
-                        self.bird_red_button.renew()
-                        self.bird_blue_button.renew()
-                        return "MENU"
+                        if self.shop_bought[1]:
+                            bird.change_color("blue")
+                            bird.rect.x = 144 - bird.rect.width // 2
+                            self.bird_yellow_button.renew()
+                            self.bird_red_button.renew()
+                            self.bird_blue_button.renew()
+                            return "MENU"
+                        else:
+                            if self.coins >= 250:
+                                self.coins -= 250
+                                self.shop_bought[1] = True
 
         if not self.bird_yellow_button.end:
             self.bird_yellow_button.update()
@@ -537,6 +555,9 @@ class GameHandler:
         screen.blit(self.bird_blue_button.image, self.bird_blue_button.rect)
         screen.blit(self.bird_red_button.image, self.bird_red_button.rect)
         screen.blit(self.coins_text, (0, 475))
+
+        for t in txts:
+            screen.blit(t[0], (t[1], t[2]))
 
         pygame.display.update()
         return "SHOP"
