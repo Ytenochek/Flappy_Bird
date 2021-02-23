@@ -7,6 +7,8 @@ import pickle
 import pygame
 
 
+pygame.init()
+
 GRAVITY = 0.1
 
 KILL_BIRD = pygame.USEREVENT + 1
@@ -17,6 +19,23 @@ ADD_SCORE_EVENT = pygame.event.Event(ADD_SCORE)
 
 ADD_COIN = pygame.USEREVENT + 3
 ADD_COIN_EVENT = pygame.event.Event(ADD_COIN)
+
+
+def load_audio():
+    sounds = {}
+    sound_prefix = "data\\audio\\"
+    if "win" in sys.platform:
+        sound_prefix += "wav\\"
+    else:
+        sound_prefix += "ogg\\"
+    for file_name in os.listdir(sound_prefix):
+        sound = pygame.mixer.Sound(sound_prefix + file_name)
+        sound.set_volume(0.1)
+        sounds[file_name.split(".")[0]] = sound
+    return sounds
+
+
+SOUNDS = load_audio()
 
 
 def load_image(fullname: str) -> pygame.Surface:
@@ -236,6 +255,7 @@ class Bird(pygame.sprite.Sprite):
         self.rect.y -= self.velocity
 
     def jump(self):
+        SOUNDS["wing"].play()
         self.velocity = 2
 
     def change_color(self, color):
@@ -338,8 +358,6 @@ grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
 nums = pygame.sprite.Group()
 
-pygame.init()
-
 pygame.font.init()
 FONT = pygame.font.SysFont("Comic Sans MS", 15)
 
@@ -388,6 +406,10 @@ class GameHandler:
 
         self.time = random.choice(["day", "night"])
 
+        for background in backgrounds:
+            background.change_image(self.time)
+        SOUNDS["swoosh"].play()
+
     @staticmethod
     def load_data():
         with open("data\\data.fbd", "rb") as f:
@@ -429,12 +451,12 @@ class GameHandler:
                 coin.kill()
             bird.rect.y = 256 - bird.rect.height // 2
             self.time = random.choice(["day", "night"])
-            for background in backgrounds:
-                background.change_image(self.time)
             self.high_score_text = FONT.render(
                 f"High score: {self.high_score}", False, (255, 0, 0)
             )
             self.coins_text = FONT.render(f"Coins: {self.coins}", False, (255, 0, 0))
+            for background in backgrounds:
+                background.change_image(self.time)
             return "MENU"
 
         self.over.update()
@@ -468,10 +490,13 @@ class GameHandler:
                         up = UpPipe(dp.rect.x, dp.rect.y)
                         dp.change_image(self.time)
                         up.change_image(self.time)
+                    for background in backgrounds:
+                        background.change_image(self.time)
                     return "GAME"
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.button_shop.check():
                     bird.rect.x = -100
+                    SOUNDS["swoosh"].play()
                     return "SHOP"
 
         if not self.title.end:
@@ -490,6 +515,14 @@ class GameHandler:
 
         pygame.display.update()
         return "MENU"
+
+    def choose_bird(self, color):
+        bird.change_color(color)
+        bird.rect.x = 144 - bird.rect.width // 2
+        self.bird_yellow_button.renew()
+        self.bird_red_button.renew()
+        self.bird_blue_button.renew()
+        SOUNDS["swoosh"].play()
 
     def shop(self):
         txts = [
@@ -510,36 +543,26 @@ class GameHandler:
                 ):
                     if self.bird_red_button.check():
                         if self.shop_bought[2]:
-                            bird.change_color("red")
-                            bird.rect.x = 144 - bird.rect.width // 2
-                            self.bird_yellow_button.renew()
-                            self.bird_red_button.renew()
-                            self.bird_blue_button.renew()
+                            self.choose_bird("red")
                             return "MENU"
                         else:
                             if self.coins >= 250:
                                 self.coins -= 250
                                 self.shop_bought[2] = True
+                                SOUNDS["bought"].play()
                     if self.bird_yellow_button.check():
                         if self.shop_bought[0]:
-                            bird.change_color("yellow")
-                            bird.rect.x = 144 - bird.rect.width // 2
-                            self.bird_yellow_button.renew()
-                            self.bird_red_button.renew()
-                            self.bird_blue_button.renew()
+                            self.choose_bird("yellow")
                             return "MENU"
                     if self.bird_blue_button.check():
                         if self.shop_bought[1]:
-                            bird.change_color("blue")
-                            bird.rect.x = 144 - bird.rect.width // 2
-                            self.bird_yellow_button.renew()
-                            self.bird_red_button.renew()
-                            self.bird_blue_button.renew()
+                            self.choose_bird("blue")
                             return "MENU"
                         else:
                             if self.coins >= 250:
                                 self.coins -= 250
                                 self.shop_bought[1] = True
+                                SOUNDS["bought"].play()
 
         if not self.bird_yellow_button.end:
             self.bird_yellow_button.update()
@@ -571,13 +594,20 @@ class GameHandler:
                     bird.jump()
             elif event.type == ADD_COIN:
                 self.coins += 1
+                SOUNDS["collect_coin"].play()
             elif event.type == KILL_BIRD:
+                SOUNDS["hit"].play()
+                SOUNDS["die"].play()
                 bird.velocity = 0
                 if self.score.score > self.high_score:
                     self.high_score = self.score.score
+                    self.high_score_text = FONT.render(
+                        f"High score: {self.high_score}", False, (255, 0, 0)
+                    )
                 self.score.score = 0
                 return "OVER"
             elif event.type == ADD_SCORE:
+                SOUNDS["point"].play()
                 dp = DownPipe()
                 dp.rect.x = 150 + dp.rect.x + 200 * 5
                 up = UpPipe(dp.rect.x, dp.rect.y)
