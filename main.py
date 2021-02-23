@@ -7,7 +7,7 @@ import pickle
 import pygame
 
 
-GRAVITY = 0.09
+GRAVITY = 0.1
 
 KILL_BIRD = pygame.USEREVENT + 1
 KILL_BIRD_EVENT = pygame.event.Event(KILL_BIRD)
@@ -138,7 +138,7 @@ class BasePipe(pygame.sprite.Sprite):
         """
         Spawn coin between pipes
         """
-        Coin(self.rect.centerx, self.rect.y + self.skylight // 2)
+        Coin(self.rect.x - 23, self.rect.y - self.skylight // 2 - 12)
 
     def set_x(self, x_pos):
         self.rect.x = x_pos
@@ -158,8 +158,7 @@ class DownPipe(BasePipe):
         self.set_y()
 
     def set_y(self):
-        self.rect.y = random.randint(100, 350)
-        UpPipe(self.rect.x, self.rect.y)
+        self.rect.y = random.randint(200, 350)
 
 
 class UpPipe(BasePipe):
@@ -170,6 +169,13 @@ class UpPipe(BasePipe):
         self.image = self.images["day"]
         self.rect.x = down_x
         self.rect.y = down_y - self.skylight - self.rect.height
+
+    def update(self):
+        if not self.used and self.rect.x < 144:
+            self.used = True
+        if self.rect.x < -self.rect.width:
+            self.kill()
+        self.rect.x -= self.speed
 
 
 class Ground(pygame.sprite.Sprite):
@@ -295,13 +301,48 @@ class Button(pygame.sprite.Sprite):
         self.end = False
 
 
+class Score:
+    def __init__(self, score, y_pos):
+        self.score = score
+        self.y_pos = y_pos
+        self.images = {
+            file_name[0]: load_image("data\\sprites\\nums\\" + file_name)
+            for file_name in os.listdir("data\\sprites\\nums")
+        }
+        self.digits = []
+
+    def __add__(self, other):
+        self.score += other
+
+    def refresh(self):
+        self.digits.clear()
+        n = 0
+        for num in str(self.score):
+            digit = pygame.sprite.Sprite()
+            digit.image = self.images[num]
+            digit.rect = digit.image.get_rect()
+            digit.rect.x = digit.image.get_width() * n
+            digit.rect.y = self.y_pos
+            n += 1
+            self.digits.append(digit)
+
+    def show(self):
+        for digit in self.digits:
+            screen.blit(digit.image, digit.rect)
+
+
 all_sprites = pygame.sprite.Group()
 pipes = pygame.sprite.Group()
 backgrounds = pygame.sprite.Group()
 grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
+nums = pygame.sprite.Group()
 
 pygame.init()
+
+pygame.font.init()
+FONT = pygame.font.SysFont("Comic Sans MS", 20)
+
 pygame.display.set_caption("Flappy Bird")
 pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
 
@@ -333,10 +374,16 @@ class GameHandler:
 
         self.button_shop.transform((100, 50))
 
-        self.score = 0
+        self.score = Score(0, 0)
 
         self.high_score, self.coins, color, self.shop_bought = self.load_data()
         bird.change_color(color)
+
+        self.high_score_text = FONT.render(
+            f"High score: {self.high_score}", False, (255, 0, 0)
+        )
+        self.coins_text = FONT.render(f"Coins: {self.coins}", False, (255, 0, 0))
+        self.time = "day"
 
     @staticmethod
     def load_data():
@@ -346,6 +393,7 @@ class GameHandler:
 
     def save_data(self):
         with open("data\\data.fbd", "wb") as f:
+            print(self.high_score, self.coins, bird.color, self.shop_bought)
             pickle.dump((self.high_score, self.coins, bird.color, self.shop_bought), f)
 
     def terminate(self):
@@ -372,14 +420,28 @@ class GameHandler:
 
         if self.over.end:
             self.over.renew()
-            pygame.time.wait(1000)
+            pygame.time.wait(2000)
+            for pipe in pipes:
+                pipe.kill()
+            for coin in coins:
+                coin.kill()
             bird.rect.y = 256 - bird.rect.height // 2
+            self.time = random.choice(["day", "night"])
+            for background in backgrounds:
+                background.change_image(self.time)
+            self.high_score_text = FONT.render(
+                f"High score: {self.high_score}", False, (255, 0, 0)
+            )
+            self.coins_text = FONT.render(f"Coins: {self.coins}", False, (255, 0, 0))
             return "MENU"
 
         self.over.update()
 
         all_sprites.draw(screen)
+        nums.draw(screen)
+        grounds.draw(screen)
         screen.blit(self.over.image, self.over.rect)
+        screen.blit(self.high_score_text, (0, 475))
 
         pygame.display.update()
 
@@ -395,6 +457,15 @@ class GameHandler:
                     self.get_ready.renew()
                     self.button_shop.renew()
                     bird.jump()
+                    self.score.refresh()
+                    for i in range(5):
+                        dp = DownPipe()
+                        dp.rect.x = 300 + dp.rect.x + 200 * i
+                        if random.choices([True, False], k=1, weights=[1, 3])[0]:
+                            dp.set_coin()
+                        up = UpPipe(dp.rect.x, dp.rect.y)
+                        dp.change_image(self.time)
+                        up.change_image(self.time)
                     return "GAME"
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.button_shop.check():
@@ -423,7 +494,13 @@ class GameHandler:
             if event.type == pygame.QUIT:
                 self.terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if all([self.bird_yellow_button.end, self.bird_blue_button.end, self.bird_red_button.end]):
+                if all(
+                    [
+                        self.bird_yellow_button.end,
+                        self.bird_blue_button.end,
+                        self.bird_red_button.end,
+                    ]
+                ):
                     if self.bird_red_button.check():
                         bird.change_color("red")
                         bird.rect.x = 144 - bird.rect.width // 2
@@ -459,6 +536,7 @@ class GameHandler:
         screen.blit(self.bird_yellow_button.image, self.bird_yellow_button.rect)
         screen.blit(self.bird_blue_button.image, self.bird_blue_button.rect)
         screen.blit(self.bird_red_button.image, self.bird_red_button.rect)
+        screen.blit(self.coins_text, (0, 475))
 
         pygame.display.update()
         return "SHOP"
@@ -471,14 +549,27 @@ class GameHandler:
                 if event.key == pygame.K_SPACE:
                     bird.jump()
             elif event.type == ADD_COIN:
-                pass
+                self.coins += 1
             elif event.type == KILL_BIRD:
                 bird.velocity = 0
+                if self.score.score > self.high_score:
+                    self.high_score = self.score.score
+                self.score.score = 0
                 return "OVER"
             elif event.type == ADD_SCORE:
-                pass
+                dp = DownPipe()
+                dp.rect.x = 150 + dp.rect.x + 200 * 5
+                up = UpPipe(dp.rect.x, dp.rect.y)
+                dp.change_image(self.time)
+                up.change_image(self.time)
+                if random.choices([True, False], k=1, weights=[1, 3])[0]:
+                    dp.set_coin()
+                self.score + 1
+                self.score.refresh()
         all_sprites.update()
         all_sprites.draw(screen)
+        grounds.draw(screen)
+        self.score.show()
         pygame.display.update()
         return "GAME"
 
