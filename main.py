@@ -9,8 +9,10 @@ import pygame
 
 pygame.init()
 
+# Bird physics
 GRAVITY = 0.1
 
+# Own events
 KILL_BIRD = pygame.USEREVENT + 1
 KILL_BIRD_EVENT = pygame.event.Event(KILL_BIRD)
 
@@ -21,7 +23,10 @@ ADD_COIN = pygame.USEREVENT + 3
 ADD_COIN_EVENT = pygame.event.Event(ADD_COIN)
 
 
-def load_audio():
+def load_audio() -> dict:
+    """
+    Returns a dict of pygame.mixer.Sound
+    """
     sounds = {}
     sound_prefix = "data/audio/"
     if "win" in sys.platform:
@@ -198,6 +203,10 @@ class UpPipe(BasePipe):
 
 
 class Ground(pygame.sprite.Sprite):
+    """
+    Endless moving ground
+    """
+
     def __init__(self):
         super().__init__(all_sprites, grounds)
         self.image = load_image("data/sprites/ground/ground.png")
@@ -218,6 +227,10 @@ class Ground(pygame.sprite.Sprite):
 
 
 class Bird(pygame.sprite.Sprite):
+    """
+    Main hero
+    """
+
     def __init__(self, color):
         super().__init__(all_sprites)
         self.color = color
@@ -265,6 +278,10 @@ class Bird(pygame.sprite.Sprite):
 
 
 class Text(pygame.sprite.Sprite):
+    """
+    Sprite from data/sprites/texts
+    """
+
     def __init__(self, x_finish, y_finish, name):
         super().__init__()
         self.image = load_image(name)
@@ -289,6 +306,10 @@ class Text(pygame.sprite.Sprite):
 
 
 class Button(pygame.sprite.Sprite):
+    """
+    Button for ui to interact
+    """
+
     def __init__(self, x_finish, y_finish, name):
         super().__init__()
         self.image = load_image(name)
@@ -299,7 +320,10 @@ class Button(pygame.sprite.Sprite):
         self.speed = 10
         self.end = False
 
-    def check(self):
+    def check(self) -> True:
+        """
+        Check button pressed
+        """
         return self.rect.collidepoint(*pygame.mouse.get_pos())
 
     def transform(self, size):
@@ -332,6 +356,9 @@ class Score:
         self.digits = []
 
     def __add__(self, other):
+        """
+        Increase score
+        """
         self.score += other
 
     def refresh(self):
@@ -358,9 +385,11 @@ grounds = pygame.sprite.Group()
 coins = pygame.sprite.Group()
 nums = pygame.sprite.Group()
 
+# Font init for texts
 pygame.font.init()
 FONT = pygame.font.SysFont("Comic Sans MS", 15)
 
+# Window attributes
 pygame.display.set_caption("Flappy Bird")
 pygame.display.set_icon(load_image("data/sprites/ico/ico.ico"))
 
@@ -382,6 +411,7 @@ class GameHandler:
     def __init__(self):
         self.game_mode = "MENU"
         self.prefix = "data/sprites/texts/"
+        # Load all spritess
         self.over = Text(48, 235, self.prefix + "gameover.png")
         self.title = Text(55, 50, self.prefix + "title.png")
         self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
@@ -394,6 +424,7 @@ class GameHandler:
 
         self.score = Score(0, 0)
 
+        # Load data from file
         self.high_score, self.coins, color, self.shop_bought = self.load_data()
         bird.change_color(color)
 
@@ -411,12 +442,18 @@ class GameHandler:
         SOUNDS["swoosh"].play()
 
     @staticmethod
-    def load_data():
+    def load_data() -> tuple:
+        """
+        Returns tuple of user data
+        """
         with open("data/data.fbd", "rb") as f:
             data = pickle.load(f)
         return data
 
     def save_data(self):
+        """
+        Saves data in file
+        """
         with open("data/data.fbd", "wb") as f:
             pickle.dump((self.high_score, self.coins, bird.color, self.shop_bought), f)
 
@@ -426,6 +463,9 @@ class GameHandler:
         sys.exit()
 
     def start(self):
+        """
+        Shell of game
+        """
         while True:
             clock.tick(60)
             if self.game_mode == "MENU":
@@ -442,13 +482,15 @@ class GameHandler:
             if event.type == pygame.QUIT:
                 self.terminate()
 
-        if self.over.end:
+        if self.over.end:  # Check if image finish moving
             self.over.renew()
             pygame.time.wait(2000)
             for pipe in pipes:
                 pipe.kill()
             for coin in coins:
                 coin.kill()
+
+            # Renew sprites
             bird.rect.y = 256 - bird.rect.height // 2
             self.time = random.choice(["day", "night"])
             self.high_score_text = FONT.render(
@@ -476,7 +518,7 @@ class GameHandler:
             if event.type == pygame.QUIT:
                 self.terminate()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE:  # Start game
                     self.title.renew()
                     self.get_ready.renew()
                     self.button_shop.renew()
@@ -494,7 +536,7 @@ class GameHandler:
                         background.change_image(self.time)
                     return "GAME"
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.button_shop.check():
+                if self.button_shop.check():  # Check shop button is clicked
                     bird.rect.x = -100
                     SOUNDS["swoosh"].play()
                     return "SHOP"
