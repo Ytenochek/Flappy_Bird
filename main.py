@@ -80,6 +80,7 @@ class Background(pygame.sprite.Sprite):
         }
         self.image = self.images["day"]
         self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
         self.speed = 2
 
     def change_image(self, time_of_day: str):
@@ -87,6 +88,7 @@ class Background(pygame.sprite.Sprite):
         Changes image of background
         """
         self.image = self.images[time_of_day]
+        self.mask = pygame.mask.from_surface(self.image)
 
     def set_x(self, x_pos: float):
         """
@@ -105,6 +107,7 @@ class Coin(pygame.sprite.Sprite):
         super().__init__(all_sprites, coins)
         self.anim = load_animations("coins")
         self.image = next(self.anim)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = x_pos
         self.rect.y = y_pos
@@ -118,6 +121,7 @@ class Coin(pygame.sprite.Sprite):
         seconds = (pygame.time.get_ticks() - self.start_tick) / 1000
         if seconds > 0.1:
             self.image = next(self.anim)
+            self.mask = pygame.mask.from_surface(self.image)
             self.transform()
             x, y = self.rect.centerx, self.rect.y
             self.rect = self.image.get_rect()
@@ -133,6 +137,7 @@ class Coin(pygame.sprite.Sprite):
             self.image,
             (self.image.get_rect().width // 4, self.image.get_rect().height // 4),
         )
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class BasePipe(pygame.sprite.Sprite):
@@ -147,6 +152,7 @@ class BasePipe(pygame.sprite.Sprite):
             "night": load_image("data/sprites/pipes/night.png"),
         }
         self.image = self.images["day"]
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.speed = 2
         self.skylight = 100  # Distance between two pipes
@@ -157,6 +163,7 @@ class BasePipe(pygame.sprite.Sprite):
         Changes image of pipe
         """
         self.image = self.images[time_of_day]
+        self.mask = pygame.mask.from_surface(self.image)
 
     def set_coin(self):
         """
@@ -191,6 +198,7 @@ class UpPipe(BasePipe):
         self.images["day"] = pygame.transform.flip(self.images["day"], False, True)
         self.images["night"] = pygame.transform.flip(self.images["night"], False, True)
         self.image = self.images["day"]
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect.x = down_x
         self.rect.y = down_y - self.skylight - self.rect.height
 
@@ -210,6 +218,7 @@ class Ground(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites, grounds)
         self.image = load_image("data/sprites/ground/ground.png")
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.y = 400
         self.speed = 2
@@ -236,6 +245,7 @@ class Bird(pygame.sprite.Sprite):
         self.color = color
         self.anim = load_animations("birds/" + self.color)
         self.image = next(self.anim)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = 144 - self.rect.width // 2
         self.rect.y = 256 - self.rect.height // 2
@@ -244,22 +254,27 @@ class Bird(pygame.sprite.Sprite):
         self.start_tick = pygame.time.get_ticks()
 
     def update(self):
-        coins_collided = pygame.sprite.spritecollide(self, coins, False)
-        for coin in coins_collided:
-            coin.kill()
-            pygame.event.post(ADD_COIN_EVENT)
+        for coin in coins:
+            if pygame.sprite.collide_mask(self, coin):
+                coin.kill()
+                pygame.event.post(ADD_COIN_EVENT)
 
         ground_collided = pygame.sprite.spritecollide(self, grounds, False)
-        pipes_collided = pygame.sprite.spritecollide(self, pipes, False)
+        pygame.sprite.spritecollide(self, pipes, False)
 
-        if ground_collided or pipes_collided:
+        if ground_collided:
             pygame.event.post(KILL_BIRD_EVENT)
+
+        for pipe in pipes:
+            if pygame.sprite.collide_mask(self, pipe):
+                pygame.event.post(KILL_BIRD_EVENT)
 
         self.velocity -= GRAVITY
         seconds = (pygame.time.get_ticks() - self.start_tick) / 1000
 
         if seconds > 0.1:
             self.image = next(self.anim)
+            self.mask = pygame.mask.from_surface(self.image)
             self.start_tick = pygame.time.get_ticks()
 
         if self.rect.y <= 0:
@@ -275,6 +290,7 @@ class Bird(pygame.sprite.Sprite):
         self.color = color
         self.anim = load_animations("birds/" + self.color)
         self.image = next(self.anim)
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Text(pygame.sprite.Sprite):
