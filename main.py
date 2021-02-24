@@ -23,11 +23,11 @@ ADD_COIN_EVENT = pygame.event.Event(ADD_COIN)
 
 def load_audio():
     sounds = {}
-    sound_prefix = "data\\audio\\"
+    sound_prefix = "data/audio/"
     if "win" in sys.platform:
-        sound_prefix += "wav\\"
+        sound_prefix += "wav/"
     else:
-        sound_prefix += "ogg\\"
+        sound_prefix += "ogg/"
     for file_name in os.listdir(sound_prefix):
         sound = pygame.mixer.Sound(sound_prefix + file_name)
         sound.set_volume(0.1)
@@ -54,7 +54,7 @@ def load_animations(prefix: str) -> cycle:
     Returns endless iterator of pygame.Surface for sprite's animation
     """
     animations = []
-    prefix = os.path.join("data\\sprites", prefix)
+    prefix = os.path.join("data/sprites", prefix)
     for name in os.listdir(prefix):
         path = os.path.join(prefix, name)
         if os.path.isfile(path):
@@ -70,8 +70,8 @@ class Background(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites, backgrounds)
         self.images = {
-            "day": load_image("data\\sprites\\back_ground\\day.png"),
-            "night": load_image("data\\sprites\\back_ground\\night.png"),
+            "day": load_image("data/sprites/back_ground/day.png"),
+            "night": load_image("data/sprites/back_ground/night.png"),
         }
         self.image = self.images["day"]
         self.rect = self.image.get_rect()
@@ -138,8 +138,8 @@ class BasePipe(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites, pipes)
         self.images = {
-            "day": load_image("data\\sprites\\pipes\\day.png"),
-            "night": load_image("data\\sprites\\pipes\\night.png"),
+            "day": load_image("data/sprites/pipes/day.png"),
+            "night": load_image("data/sprites/pipes/night.png"),
         }
         self.image = self.images["day"]
         self.rect = self.image.get_rect()
@@ -200,7 +200,7 @@ class UpPipe(BasePipe):
 class Ground(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites, grounds)
-        self.image = load_image("data\\sprites\\ground\\ground.png")
+        self.image = load_image("data/sprites/ground/ground.png")
         self.rect = self.image.get_rect()
         self.rect.y = 400
         self.speed = 2
@@ -221,7 +221,7 @@ class Bird(pygame.sprite.Sprite):
     def __init__(self, color):
         super().__init__(all_sprites)
         self.color = color
-        self.anim = load_animations("birds\\" + self.color)
+        self.anim = load_animations("birds/" + self.color)
         self.image = next(self.anim)
         self.rect = self.image.get_rect()
         self.rect.x = 144 - self.rect.width // 2
@@ -260,7 +260,7 @@ class Bird(pygame.sprite.Sprite):
 
     def change_color(self, color):
         self.color = color
-        self.anim = load_animations("birds\\" + self.color)
+        self.anim = load_animations("birds/" + self.color)
         self.image = next(self.anim)
 
 
@@ -326,8 +326,8 @@ class Score:
         self.score = score
         self.y_pos = y_pos
         self.images = {
-            file_name[0]: load_image("data\\sprites\\nums\\" + file_name)
-            for file_name in os.listdir("data\\sprites\\nums")
+            file_name[0]: load_image("data/sprites/nums/" + file_name)
+            for file_name in os.listdir("data/sprites/nums")
         }
         self.digits = []
 
@@ -362,7 +362,7 @@ pygame.font.init()
 FONT = pygame.font.SysFont("Comic Sans MS", 15)
 
 pygame.display.set_caption("Flappy Bird")
-pygame.display.set_icon(load_image("data\\sprites\\ico\\ico.ico"))
+pygame.display.set_icon(load_image("data/sprites/ico/ico.ico"))
 
 clock = pygame.time.Clock()
 
@@ -381,14 +381,14 @@ bird = Bird("yellow")
 class GameHandler:
     def __init__(self):
         self.game_mode = "MENU"
-        self.prefix = "data\\sprites\\texts\\"
+        self.prefix = "data/sprites/texts/"
         self.over = Text(48, 235, self.prefix + "gameover.png")
         self.title = Text(55, 50, self.prefix + "title.png")
         self.get_ready = Text(52, 150, self.prefix + "get_ready.png")
         self.button_shop = Button(94, 450, self.prefix + "shop.png")
-        self.bird_yellow_button = Button(31, 130, "data\\sprites\\birds\\yellow\\1.png")
-        self.bird_blue_button = Button(127, 130, "data\\sprites\\birds\\blue\\1.png")
-        self.bird_red_button = Button(223, 130, "data\\sprites\\birds\\red\\1.png")
+        self.bird_yellow_button = Button(31, 130, "data/sprites/birds/yellow/1.png")
+        self.bird_blue_button = Button(127, 130, "data/sprites/birds/blue/1.png")
+        self.bird_red_button = Button(223, 130, "data/sprites/birds/red/1.png")
 
         self.button_shop.transform((100, 50))
 
@@ -412,12 +412,12 @@ class GameHandler:
 
     @staticmethod
     def load_data():
-        with open("data\\data.fbd", "rb") as f:
+        with open("data/data.fbd", "rb") as f:
             data = pickle.load(f)
         return data
 
     def save_data(self):
-        with open("data\\data.fbd", "wb") as f:
+        with open("data/data.fbd", "wb") as f:
             pickle.dump((self.high_score, self.coins, bird.color, self.shop_bought), f)
 
     def terminate(self):
