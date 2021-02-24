@@ -36,4 +36,4 @@ cd release/lin
 ## Игра
 ### Интерфейс
 #### Главное меню
-[!Главное меню](README_assets/main_menu.png)
+![Главное меню](README_assets/main_menu.png)
