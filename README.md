@@ -30,5 +30,6 @@ cd release/win
 ```
 ##### Linux
 ``` 
-
+cd release/lin
+"Flappy Bird"
 ```
