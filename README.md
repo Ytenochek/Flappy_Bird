@@ -33,3 +33,7 @@ cd release/win
 cd release/lin
 "Flappy Bird"
 ```
+## Игра
+### Интерфейс
+#### Главное меню
+[!Главное меню](README_assets/main_menu.png)
